@@ -36,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
   );
 
-  static final Marker marker = Marker(  // 마커용
+  static final Marker marker = Marker(
+    // 마커용
     markerId: MarkerId('marker'),
     position: companyLatLng,
   );
