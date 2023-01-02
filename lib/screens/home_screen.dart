@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static final double distance = 100; // 원의 반경을 변수로 지정했다
 
-  static final Circle circle = Circle(
+  static final Circle withinDistanceCircle = Circle(
     circleId: CircleId('circle'),
     // Id 값으로 여러개의 동그라미를 그렸을 때 구분할 수 있다
     center: companyLatLng,
@@ -32,6 +32,28 @@ class _HomeScreenState extends State<HomeScreen> {
     // 원 내부
     radius: distance,
     strokeColor: Colors.blue,
+    // 원 둘레
+    strokeWidth: 1, // 원 둘레를 1픽셀로 설정
+  );
+  static final Circle notWithinDistanceCircle = Circle(
+    circleId: CircleId('notWithinDistanceCircle'),
+    // Id 값으로 여러개의 동그라미를 그렸을 때 구분할 수 있다
+    center: companyLatLng,
+    fillColor: Colors.red.withOpacity(0.5),
+    // 원 내부
+    radius: distance,
+    strokeColor: Colors.red,
+    // 원 둘레
+    strokeWidth: 1, // 원 둘레를 1픽셀로 설정
+  );
+  static final Circle checkedDone = Circle(
+    circleId: CircleId('checkedDone'),
+    // Id 값으로 여러개의 동그라미를 그렸을 때 구분할 수 있다
+    center: companyLatLng,
+    fillColor: Colors.green.withOpacity(0.5),
+    // 원 내부
+    radius: distance,
+    strokeColor: Colors.green,
     // 원 둘레
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
   );
@@ -66,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _CustomGoogleMap(
                   initialPosition: initialPosition,
-                  circle: circle,
+                  circle: withinDistanceCircle,
                   marker: marker,
                 ),
                 _ChoolCheckButton(),
