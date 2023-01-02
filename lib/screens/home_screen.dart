@@ -10,6 +10,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool choolCheckDone = false;
+
   // latitude - 위도, longitude - 경도
   static final LatLng companyLatLng = LatLng(
     37.5233273,
@@ -22,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
     zoom: 15,
   );
 
-  static final double distance = 100; // 원의 반경을 변수로 지정했다
+  static final double okDistance = 100; // 원의 반경을 변수로 지정했다
 
   static final Circle withinDistanceCircle = Circle(
     circleId: CircleId('circle'),
@@ -30,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     center: companyLatLng,
     fillColor: Colors.blue.withOpacity(0.5),
     // 원 내부
-    radius: distance,
+    radius: okDistance,
     strokeColor: Colors.blue,
     // 원 둘레
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
@@ -41,18 +43,18 @@ class _HomeScreenState extends State<HomeScreen> {
     center: companyLatLng,
     fillColor: Colors.red.withOpacity(0.5),
     // 원 내부
-    radius: distance,
+    radius: okDistance,
     strokeColor: Colors.red,
     // 원 둘레
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
   );
-  static final Circle checkedDone = Circle(
+  static final Circle checkedDoneCircle = Circle(
     circleId: CircleId('checkedDone'),
     // Id 값으로 여러개의 동그라미를 그렸을 때 구분할 수 있다
     center: companyLatLng,
     fillColor: Colors.green.withOpacity(0.5),
     // 원 내부
-    radius: distance,
+    radius: okDistance,
     strokeColor: Colors.green,
     // 원 둘레
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
@@ -68,7 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: renderAppBar(),
-      body: FutureBuilder(
+      body: FutureBuilder<String>(
+        // Future 빌더의 제너릭 타입에는 snapshot의 데이터 타입을 넣어주면 된다. 생략도 가능
         future: checkPermission(),
         // checkPermission의 값이 바뀔때마다 builder를 재실행 시킨다
         builder: (BuildContext context, AsyncSnapshot snapshot) {
@@ -84,16 +87,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (snapshot.data == '위치 권한이 허가 되었습니다.') {
             // checkPermission()에서 리턴해준 값이 snapshot.data에 들어간다. 위의 FutureBuilder()에서 작동한다
-            return Column(
-              children: [
-                _CustomGoogleMap(
-                  initialPosition: initialPosition,
-                  circle: withinDistanceCircle,
-                  marker: marker,
-                ),
-                _ChoolCheckButton(),
-              ],
-            );
+            return StreamBuilder<Position>(
+                // 아래에서 넘겨주는 값을 제너릭 값으로 받으면 된다
+                stream: Geolocator.getPositionStream(),
+                // 여기서 넘겨주는 값이 Position이다
+                // getPositionStream은 지도상에서 position이 바뀔 때 마다 받는다
+                builder: (context, snapshot) {
+                  bool isWithinRange = false;
+
+                  if (snapshot.hasData) {
+                    // Data가 있으면
+                    final start =
+                        snapshot.data!; // Data가 있으면 조건문에 들어오기 때문에 null일 수가 없다
+                    final end = companyLatLng;
+
+                    final distance = Geolocator.distanceBetween(
+                      start.latitude,
+                      start.longitude,
+                      end.latitude,
+                      end.longitude,
+                    );
+                    if (distance < okDistance) {
+                      isWithinRange = true;
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      _CustomGoogleMap(
+                        initialPosition: initialPosition,
+                        circle: choolCheckDone
+                            ? checkedDoneCircle
+                            : isWithinRange
+                                ? withinDistanceCircle
+                                : notWithinDistanceCircle,
+                        marker: marker,
+                      ),
+                      _ChoolCheckButton(
+                        isWithinRange: isWithinRange,
+                        onPressed: onChoolCheckPressed,
+                        choolCheckDone: choolCheckDone,
+                      ),
+                    ],
+                  );
+                });
           }
 
           return Center(
@@ -102,6 +139,40 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  onChoolCheckPressed() async {
+    final result = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          // Dialog를 쉽게 만들 수 있도록 최적화 되어있다
+          title: Text('출근하기'), // Dialog 제목
+          content: Text('출근을 하시겠습니까?'), // 내용
+          actions: [
+            // 버튼들
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: Text('출근하기'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result) {
+      setState(() {
+        choolCheckDone = true;
+      });
+    }
   }
 
   Future<String> checkPermission() async {
@@ -177,12 +248,41 @@ class _CustomGoogleMap extends StatelessWidget {
 }
 
 class _ChoolCheckButton extends StatelessWidget {
-  const _ChoolCheckButton({Key? key}) : super(key: key);
+  final bool isWithinRange;
+  final VoidCallback onPressed;
+  final bool choolCheckDone;
+
+  const _ChoolCheckButton({
+    Key? key,
+    required this.isWithinRange,
+    required this.onPressed,
+    required this.choolCheckDone,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Text('출근'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.timelapse_outlined,
+            size: 50.0,
+            color: choolCheckDone
+                ? Colors.green
+                : isWithinRange
+                    ? Colors.blue
+                    : Colors.red,
+          ),
+          const SizedBox(height: 20),
+          if (!choolCheckDone &&
+              isWithinRange) // if문을 children에 바로 넣었다 그러면 그 바로 밑에 있는 버튼에 적용
+            TextButton(
+              onPressed: onPressed,
+              child: Text('출근하기'),
+            ),
+        ],
+      ),
     );
   }
 }
