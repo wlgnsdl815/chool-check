@@ -36,6 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
     strokeWidth: 1, // 원 둘레를 1픽셀로 설정
   );
 
+  static final Marker marker = Marker(
+    markerId: MarkerId('marker'),
+    position: companyLatLng,
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _CustomGoogleMap(
                   initialPosition: initialPosition,
                   circle: circle,
+                  marker: marker,
                 ),
                 _ChoolCheckButton(),
               ],
@@ -120,11 +126,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _CustomGoogleMap extends StatelessWidget {
   final CameraPosition initialPosition;
   final Circle circle;
+  final Marker marker;
 
   const _CustomGoogleMap({
     Key? key,
     required this.initialPosition,
     required this.circle,
+    required this.marker,
   }) : super(key: key);
 
   @override
@@ -139,6 +147,7 @@ class _CustomGoogleMap extends StatelessWidget {
         myLocationButtonEnabled: false,
         // 직접 만들어 볼 것이라서 false 했다.
         circles: Set.from([circle]),
+        markers: Set.from([marker]),
       ),
     );
   }
