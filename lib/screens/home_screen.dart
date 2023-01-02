@@ -22,6 +22,20 @@ class _HomeScreenState extends State<HomeScreen> {
     zoom: 15,
   );
 
+  static final double distance = 100; // 원의 반경을 변수로 지정했다
+
+  static final Circle circle = Circle(
+    circleId: CircleId('circle'),
+    // Id 값으로 여러개의 동그라미를 그렸을 때 구분할 수 있다
+    center: companyLatLng,
+    fillColor: Colors.blue.withOpacity(0.5),
+    // 원 내부
+    radius: distance,
+    strokeColor: Colors.blue,
+    // 원 둘레
+    strokeWidth: 1, // 원 둘레를 1픽셀로 설정
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _CustomGoogleMap(
                   initialPosition: initialPosition,
+                  circle: circle,
                 ),
                 _ChoolCheckButton(),
               ],
@@ -104,10 +119,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _CustomGoogleMap extends StatelessWidget {
   final CameraPosition initialPosition;
+  final Circle circle;
 
   const _CustomGoogleMap({
     Key? key,
     required this.initialPosition,
+    required this.circle,
   }) : super(key: key);
 
   @override
@@ -117,6 +134,11 @@ class _CustomGoogleMap extends StatelessWidget {
       child: GoogleMap(
         mapType: MapType.normal,
         initialCameraPosition: initialPosition,
+        myLocationEnabled: true,
+        // 지도에 설정한 내 위치가 뜬다(설정은 IOS 시뮬레이터 설정에서 위도 경도 입력
+        myLocationButtonEnabled: false,
+        // 직접 만들어 볼 것이라서 false 했다.
+        circles: Set.from([circle]),
       ),
     );
   }
